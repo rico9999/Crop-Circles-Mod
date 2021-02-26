@@ -143,10 +143,10 @@ public class EtaCommand {
 		  int block_count = 0;
 		  
 		  // Exercises
-		  boolean do_exercise1 = false;
+		  boolean do_exercise1 = true;
 		  boolean do_exercise2 = false;
 		  boolean do_exercise3 = false;
-		  boolean do_exercise4 = true;
+		  boolean do_exercise4 = false;
 		  
 		  
 		  // Nested for loops
