@@ -48,63 +48,80 @@ import net.minecraft.inventory.IClearable;
 public class EtaCommand {
 	
 	
-      
-      private static final Dynamic2CommandExceptionType TOO_BIG_EXCEPTION = new Dynamic2CommandExceptionType((p_208897_0_, p_208897_1_) -> {
-          return new TranslationTextComponent("commands.fill.toobig", p_208897_0_, p_208897_1_);
-      });
-      private static final BlockStateInput AIR = new BlockStateInput(Blocks.AIR.getDefaultState(), Collections.emptySet(), (CompoundNBT)null);
-      private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslationTextComponent("commands.fill.failed"));
+    // Exception Handlers  
+    private static final Dynamic2CommandExceptionType TOO_BIG_EXCEPTION = new Dynamic2CommandExceptionType((translationKey, args) -> {
+    	return new TranslationTextComponent("commands.fill.toobig", translationKey, args);
+    });
+    private static final SimpleCommandExceptionType FAILED_EXCEPTION = new SimpleCommandExceptionType(new TranslationTextComponent("commands.fill.failed"));
+
+    
+    // "AIR" - convenience variable
+	private static final BlockStateInput AIR = new BlockStateInput( Blocks.AIR.getDefaultState(), Collections.emptySet(), (CompoundNBT)null );
 
 	
-	  public static void register(CommandDispatcher<CommandSource> dispatcher) {
+	public static void register(CommandDispatcher<CommandSource> dispatcher) {
 		  
+		  	// Basic command - duplicate functionality from "/fill"
 		    LiteralArgumentBuilder<CommandSource> etaCommand = Commands.literal("etafill")
 		         .requires((commandSource) -> commandSource.hasPermissionLevel(1))
 		         .then(Commands.argument("from", BlockPosArgument.blockPos())
-		         .then(Commands.argument("to", BlockPosArgument.blockPos())
-		         .then(Commands.argument("block", BlockStateArgument.blockState()).executes((p_198472_0_) -> {
-		             return doFill( p_198472_0_.getSource(), 
-		            		        new MutableBoundingBox(BlockPosArgument.getLoadedBlockPos(p_198472_0_, "from"), 
-		            		        BlockPosArgument.getLoadedBlockPos(p_198472_0_, "to")), 
-		            		        BlockStateArgument.getBlockState(p_198472_0_, "block"), 
+		         .then(Commands.argument("to"  , BlockPosArgument.blockPos())
+		         .then(Commands.argument("block", BlockStateArgument.blockState())
+		         .executes((context) -> {
+		             return doFill( context.getSource(), 
+		            		        new MutableBoundingBox( BlockPosArgument.getLoadedBlockPos(context, "from"), 
+		            		        					    BlockPosArgument.getLoadedBlockPos(context, "to")), 
+		            		        BlockStateArgument.getBlockState(context, "block"), 
 		            		        EtaCommand.Mode.REPLACE, (Predicate<CachedBlockInfo>)null);
-		         }))));
-
-		       
+		         	}
+		         ))));
+		    
 		    dispatcher.register(etaCommand);
 
-		    LiteralArgumentBuilder<CommandSource> cropCircleCommand = Commands.literal("cropcircle")
-			         .requires((commandSource) -> commandSource.hasPermissionLevel(1))
-			         .then(Commands.argument("from", BlockPosArgument.blockPos())
-			         .then(Commands.argument("to", BlockPosArgument.blockPos())
-			         .then(Commands.argument("block", BlockStateArgument.blockState()).executes((arg) -> {
-			             return doFillCropCircle( arg.getSource(), 
-			                            		  new MutableBoundingBox( BlockPosArgument.getLoadedBlockPos(arg, "from"), 
-			                            				  				  BlockPosArgument.getLoadedBlockPos(arg, "to")), 
-			                            		  BlockStateArgument.getBlockState(arg, "block"), 
-			                            		  EtaCommand.Mode.REPLACE, 
-			                            		  (Predicate<CachedBlockInfo>)null);
-			         	}
-			        ))));
-		    dispatcher.register(cropCircleCommand);
-
-		    
-		    
+		    // Minecraft By Example sample command
+		    //
 		    LiteralArgumentBuilder<CommandSource> montyCommand = 
-		    		Commands.literal("etacommand").requires((commandSource) -> commandSource.hasPermissionLevel(1))
-		    		.then(Commands.literal("python").executes(commandContext -> sendMessage(commandContext, QuoteSource.MONTY_PYTHON.getQuote())));
+		    		Commands.literal("etacommand")
+		    		.requires((commandSource) -> commandSource.hasPermissionLevel(1))
+		    		.then(Commands.literal("python")
+		    	    .executes(commandContext -> sendMessage(commandContext, QuoteSource.MONTY_PYTHON.getQuote())));
 		    
 		    dispatcher.register(montyCommand);
+		    
+		    
+		    // Cropcircle command
+		    //
+		    LiteralArgumentBuilder<CommandSource> cropCircleCommand = Commands.literal("cropcircle")
+			         .requires((commandSource) -> commandSource.hasPermissionLevel(1))
+			         .then(Commands.argument("pos", BlockPosArgument.blockPos())
+			         .then(Commands.argument("block", BlockStateArgument.blockState())
+			         .executes((arg) -> {
+			             return doFillCropCircle( arg.getSource(),                                                // world info
+			            		 				  new BlockPos( BlockPosArgument.getLoadedBlockPos(arg, "pos")),  // location
+			                            		  BlockStateArgument.getBlockState(arg, "block"),                 // block type
+			                            		  EtaCommand.Mode.REPLACE,                                        // REPLACE
+			                            		  (Predicate<CachedBlockInfo>)null);
+			         	}
+			        )));
+		    dispatcher.register(cropCircleCommand);
 
 	  }
 
 	  
-	  
-	  private static int doFillCropCircle(CommandSource source, MutableBoundingBox area, BlockStateInput newBlock, EtaCommand.Mode mode, @Nullable Predicate<CachedBlockInfo> replacingPredicate) throws CommandSyntaxException {
+	  // doFillCropCircle()
+	  //    - Fill a crop circle at the given position using the specified block.
+	  //
+	  @SuppressWarnings("unused")
+	private static int doFillCropCircle( CommandSource source, 
+			  							   BlockPos origin,            // "pos"
+			  							   BlockStateInput newBlock,   // "block"
+			  							   EtaCommand.Mode mode,       // REPLACE
+			  							   @Nullable Predicate<CachedBlockInfo> replacingPredicate) throws CommandSyntaxException {
 		
 	      // Server object
 	      ServerWorld serverworld = source.getWorld();		  
 		  
+	      // Loop bounds
 		  int x_min = 0;
 		  int x_max = 100;
 		  
@@ -113,39 +130,143 @@ public class EtaCommand {
 		  
 		  int z_min = 0;
 		  int z_max = 0;
-		  		  
+		  		
+		  // Radius of circles
 		  int inner_radius = 10;
 		  int outer_radius = 25;
 
+		  // Center of circle
 		  int circle_x = 50;
 		  int circle_y = 50;
 		  
-		  int count = 0;
+		  // How many blocks have we placed?
+		  int block_count = 0;
 		  
+		  // Exercises
+		  boolean do_exercise1 = false;
+		  boolean do_exercise2 = false;
+		  boolean do_exercise3 = false;
+		  boolean do_exercise4 = true;
+		  
+		  
+		  // Nested for loops
+		  //
 		  for (int x = x_min; x <= x_max; x++) {
 			  for (int y = y_min; y <= y_max; y++) {
 				  for (int z = z_min; z <= z_max; z++) {
 					  
+					  // Shall we place a block?
+					  boolean place_block = false;
 					  
-					  double dist = Math.sqrt( Math.pow(x - circle_x, 2) + 
-							                   Math.pow(y - circle_y, 2));
+					  if (do_exercise1) {
 
-					  if ((dist > inner_radius) && (dist < outer_radius)) {
-
-						  // Place the block at (area.minX, area.minY, area.minZ) + (x,y,z)
-						  BlockPos bpos = new BlockPos(area.minX + x, area.minY + y, area.minZ + z);
+						  // EXERCISE #1 - Draw a disc with radius 'outer_radius'.
+						  //    - Starting code for computing x-distance-to-center and y-distance-to-center is given.
+						  //    - You need to add code to calculate 'dist'.
+						  //    - You need to add code to figure out whether to place a block based on 'dist'
+						  //  Hints: 
+						  //     (1) Math.pow(a,b) returns 'a' raised to the 'b' power
+						  //     (2) Math.sqrt(x) returns the square root of 'x'
+						  //
+						  int distance_to_center_x = (x - circle_x);
+						  int distance_to_center_y = (y - circle_y);
+						  
+						  double dist = 0.0;  // <-- Fill in code here to calculate distance
+						  
+						  if (     false      ) {     // <-- Fill in code here
+							  place_block = true;
+						  }
+						  
+					  }
+					  
+					  if (do_exercise2) {
+						  
+						  // EXERCISE #2 - Draw a big '+' in the sky
+						  //    Hints: 
+						  //      (1) What x,y locations do you need to place blocks on to graph a '+' ?
+						  //      (2) Acacia fences look quite good for this exercise!
+						  
+						  if (  false   ) {           // <-- Fill in code here
+							  place_block = true;
+						  }
+						  						  
+					  }
+					  
+					  if (do_exercise3) {
+						  
+						  // EXERCISE #3 - Draw a big 'X' in the sky
+						  //   Hints:
+						  //      (1) What cases of (x,y) give you a line starting at (0,0) going to (100,100)?
+						  //      (2) What cases of (x,y) give you a line starting at (0,100) going to (100,0)?
+						  //      (3) Stairs look quite good for this exercise!
+						  
+						  if (  false  ) {
+							  place_block = true;     // <-- Fill in code here
+						  }
+					  }
+					  
+					  
+					  if (place_block) {
+						  
+						  // We will place the block at (area.minX, area.minY, area.minZ) + (x,y,z)
+						  BlockPos bpos = new BlockPos(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
+						  
 						  fillSingleBlock(serverworld, bpos, newBlock, mode);
 					  
-						  count++;
+						  block_count++;
 					  }
 				  }
 			  }
+		  }
 			  
+		  // EXERCISE #4
+		  //    What does this code do?
+		  if (do_exercise4) {
+		  			  
+			  for (double z = 0; z < 100 ; z+=0.05) {
+				  
+				  double angle  = z / 40.0 * 2 * Math.PI;
+				  double offset = 170.0 / 360 * 2 * Math.PI;   // 120-degrees
+				  
+				  
+				  double x1 = 25 * Math.sin(angle);
+				  double y1 = 25 * Math.cos(angle);
+				  double x2 = 25 * Math.sin(angle + offset);
+				  double y2 = 25 * Math.cos(angle + offset);
+				  
+				  BlockPos bpos1 = new BlockPos(origin.getX() + x1, origin.getY() + z, origin.getZ() + y1);
+				  BlockPos bpos2 = new BlockPos(origin.getX() + x2, origin.getY() + z, origin.getZ() + y2);
+				  
+				  fillSingleBlock(serverworld, bpos1, newBlock, mode);
+				  fillSingleBlock(serverworld, bpos2, newBlock, mode);	  
+			  
+				  // 1 rotation == z=40.   z=40 is 40/0.05 = 800 iterations or 1600 blocks.
+				  //    1600 / 10.5 = 152
+				  
+				  if ((block_count % 152) == 10) {
+					  for (double q = 0 ; q < 1; q += 0.05) {
+						  BlockPos bpos3 = new BlockPos( interp(bpos1.getX(), bpos2.getX(), q),
+								  						 interp(bpos1.getY(), bpos2.getY(), q),
+								  						 interp(bpos1.getZ(), bpos2.getZ(), q));
+						  fillSingleBlock(serverworld, bpos3, newBlock, mode);
+					  }
+				  }
+				  
+				  block_count += 2;
+			  }
 		  }
 		  
-          source.sendFeedback(new TranslationTextComponent("commands.fill.success", count), true);
+          source.sendFeedback(new TranslationTextComponent("commands.fill.success", block_count), true);
 
 		  return 0;
+	  }
+	  
+	  
+	  
+	  // Interpolate between x1<->x2 given coefficient q [0..1.0].
+	  //
+	  static double interp(double x1, double x2, double q) {
+		  return x1*q + x2*(1.0-q);
 	  }
 	  
 	  
@@ -320,8 +441,33 @@ public class EtaCommand {
 
 		    private String [] quotes;
 		  }
-		  
-		  
-		  
-
 }
+
+
+
+
+// Answer Key
+//
+// #1
+// double dist = Math.sqrt( Math.pow(x - circle_x, 2) + Math.pow(y - circle_y, 2));
+// if (dist < outer_radius) place_block = true;
+
+
+// #2
+// if ((x == 50) || (y == 50)) place_block = true;
+
+// #3
+// if (y == x)       place_block = true;
+// if (y == 100 - x) place_block = true;
+
+// #4
+// https://en.wikipedia.org/wiki/Nucleic_acid_double_helix
+//   "The double helix makes one complete turn about its axis every 10.4–10.5 base pairs in solution."
+//
+
+// Other interesting links:
+//
+// https://github.com/elBukkit/EffectLib/
+// https://bukkit.org/threads/creating-a-helix-3d-spiral-out-of-particles.314312/
+
+
