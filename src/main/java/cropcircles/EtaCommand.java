@@ -6,9 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
-
 import com.google.common.collect.Lists;
 import com.mojang.brigadier.CommandDispatcher;
 //import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -17,7 +15,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.Dynamic2CommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 //import minecraftbyexample.mbe45_commands.MBEquoteCommand.QuoteSource;
