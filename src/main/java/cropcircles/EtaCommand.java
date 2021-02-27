@@ -109,7 +109,7 @@ public class EtaCommand {
 	  //    - Fill a crop circle at the given position using the specified block.
 	  //
 	  @SuppressWarnings("unused")
-	private static int doFillCropCircle( CommandSource source, 
+	  private static int doFillCropCircle( CommandSource source, 
 			  							   BlockPos origin,            // "pos"
 			  							   BlockStateInput newBlock,   // "block"
 			  							   EtaCommand.Mode mode,       // REPLACE
@@ -140,7 +140,7 @@ public class EtaCommand {
 		  int block_count = 0;
 		  
 		  // Exercises
-		  boolean do_exercise1 = true;
+		  boolean do_exercise1 = false;
 		  boolean do_exercise2 = false;
 		  boolean do_exercise3 = false;
 		  boolean do_exercise4 = false;
@@ -154,6 +154,14 @@ public class EtaCommand {
 					  
 					  // Shall we place a block?
 					  boolean place_block = false;
+					  
+					  // No exercise selected - draw a checkerboard
+					  if (!do_exercise1 && !do_exercise2 && !do_exercise3 && !do_exercise4) {
+						  	int x_checker = (x / 10) % 2;
+						  	int y_checker = (y / 10) % 2;
+						  	place_block = ((x_checker ^ y_checker) == 0);
+					  }
+					  
 					  
 					  if (do_exercise1) {
 
@@ -260,7 +268,7 @@ public class EtaCommand {
 	  
 	  
 	  
-	  // Interpolate between x1<->x2 given coefficient q [0..1.0].
+	  // Interpolate between x1<->x2 given coefficient q [0 - 1.0].
 	  //
 	  static double interp(double x1, double x2, double q) {
 		  return x1*q + x2*(1.0-q);
